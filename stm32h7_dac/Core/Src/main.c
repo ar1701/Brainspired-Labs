@@ -68,22 +68,29 @@ static void MX_TIM2_Init(void);
 /* USER CODE BEGIN 0 */
 float value = 0.2;
 uint32_t var;
-uint32_t square_val[100];
+#define SAMPLE_SIZE 1000
+uint32_t square_val[SAMPLE_SIZE];
 #define PI 3.1415926
 
 uint32_t required_voltage(float v);
+uint32_t required_frequency(float f);
 
 uint32_t required_voltage(float v) {
     uint32_t dac_value = (uint32_t)((v * 4095) / 3.3);
     return dac_value;
 }
 
-void get_squareval() {
-    uint32_t voltage = required_voltage(3.2);
+uint32_t required_frequency(float f) {
+    uint32_t period_value = (uint32_t)((SAMPLE_SIZE/f) - 1);
+    return period_value;
+}
 
-    for (int i = 0; i < 100; i++) {
+void get_squareval() {
+    uint32_t voltage = required_voltage(2.56);
+
+    for (int i = 0; i < SAMPLE_SIZE; i++) {
         // Alternate between high and low values for the square wave
-        if (i < 50) {
+        if (i < SAMPLE_SIZE/2) {
             square_val[i] = 0;  // Low voltage level
         } else {
             square_val[i] = voltage;  // High voltage level
@@ -128,7 +135,7 @@ int main(void)
 
   HAL_TIM_Base_Start(&htim2);
   get_squareval();
-  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1,square_val, 100, DAC_ALIGN_12B_R);
+  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, square_val, 1000, DAC_ALIGN_12B_R);  // Updated size
 
   /* USER CODE END 2 */
 
@@ -277,7 +284,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 64-1;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 100-1;
+  htim2.Init.Period = required_frequency(100);
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
